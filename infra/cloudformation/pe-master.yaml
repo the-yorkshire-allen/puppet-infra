@@ -8,13 +8,12 @@ Parameters:
     Default: vpc-b741c3d3
 
   EC2InstanceTypeParameter:
-    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+    Description: Enter m5.large or m5.xlarge. Default is m5.large.
     Type: String
-    Default: t2.micro
+    Default: m5.large
     AllowedValues:
-      - t2.micro
-      - m1.small
-      - m1.large
+      - m5.large
+      - m5.xlarge
 
   EC2ImageIdParameter:
     Description: Image Id to be used to create the EC2.  Default is Centos8 in eu-west-1
