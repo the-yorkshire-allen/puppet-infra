@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Cloudformation template for building a resource pool for a PE-Master
+
+Parameters:
+  VPCIdParameter:
+    Description: The ID of the VPC to be used
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-b741c3d3
+
+  EC2InstanceTypeParameter:
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+
+  EC2ImageIdParameter:
+    Description: Image Id to be used to create the EC2.  Default is Centos8 in eu-west-1
+    Type: AWS::EC2::Image::Id
+    Default: ami-090b347d44e58c47b
+
+  TagEmailParameter:
+    Description: Email address for tracking the resource
+    Type: String
+    Default: chris.allen@puppet.com
+
+  TagLifetimeParameter:
+    Description: Duration of the instance
+    Type: String
+    Default: 30d
+
+  TagTeamParameter:
+    Description: The team to which the resource belongs
+    Type: String
+    Default: PSE
+
+Resources:
+
+  PEMasterSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Ref: VPCIdParameter
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Lifetime
+          Value:
+            Ref: TagLifetimeParameter
+        - Key: Email
+          Value:
+            Ref: TagEmailParameter
+        - Key: Team
+          Value:
+            Ref: TagTeamParameter
+
+  PEMaster:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Ref: EC2ImageIdParameter
+      InstanceType:
+        Ref: EC2InstanceTypeParameter
+      Monitoring: false
+      SecurityGroupIds:
+        - PEMasterSG
+      UserData: !Base64 |
+        #!/bin/bash -ex
+        # put your script here
+      Tags:
+        - Key: Lifetime
+          Value:
+            Ref: TagLifetimeParameter
+        - Key: Email
+          Value:
+            Ref: TagEmailParameter
+        - Key: Team
+          Value:
+            Ref: TagTeamParameter
