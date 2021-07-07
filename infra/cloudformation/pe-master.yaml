@@ -3,7 +3,7 @@ Description: Cloudformation template for building a resource pool for a PE-Maste
 
 Parameters:
   VPCIdParameter:
-    Description: The ID of the VPC to be used
+    Description: The ID of the VPC to be used. Default is eu-west-1.
     Type: AWS::EC2::VPC::Id
     Default: vpc-b741c3d3
 
@@ -40,6 +40,8 @@ Resources:
   PEMasterSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupDescription: The SG for the Puppet Enterprise Server
+      GroupName: PEMasterSG    
       VpcId:
         Ref: VPCIdParameter
       SecurityGroupIngress:
@@ -48,7 +50,7 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
-        - IpProtocol: tcp
+        - IpProtocol: -1      
           CidrIp: 0.0.0.0/0
       Tags:
         - Key: Lifetime
@@ -70,7 +72,7 @@ Resources:
         Ref: EC2InstanceTypeParameter
       Monitoring: false
       SecurityGroupIds:
-        - PEMasterSG
+        - !GetAtt PEMasterSG.GroupId
       UserData: !Base64 |
         #!/bin/bash -ex
         # put your script here
