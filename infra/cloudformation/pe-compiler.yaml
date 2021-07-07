@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Cloudformation template for building a resource pool for a PE-Compiler
+
+Parameters:
+  VPCIdParameter:
+    Description: The ID of the VPC to be used. Default is eu-west-1.
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-b741c3d3
+
+  EC2InstanceTypeParameter:
+    Description: Enter m5.large or m5.xlarge. Default is m5.large.
+    Type: String
+    Default: m5.large
+    AllowedValues:
+      - m5.large
+      - m5.xlarge
+
+  EC2ImageIdParameter:
+    Description: Image Id to be used to create the EC2.  Default is 47b Centos8 in eu-west-1. b31 Windows Server 2019 Base.
+    Type: AWS::EC2::Image::Id
+    Default: ami-090b347d44e58c47b
+    AllowedValues:
+      - ami-00044f922345e6b31
+      - ami-090b347d44e58c47b
+
+  EC2KeyNameParameter:
+    Description: Key Pair used when creating the image
+    Type: String
+    Default: chris.allen-SSH
+
+  PuppetMasterCIDRParameter:
+    Description: Open connections from the Compiler to the master
+    Type: String
+    Default: 0.0.0.0/0
+
+  UniqueParameter:
+    Description: Unique reference for this CF Stack to identify resources
+    Type: String
+
+  TagEmailParameter:
+    Description: Email address for tracking the resource
+    Type: String
+    Default: chris.allen@puppet.com
+
+  TagLifetimeParameter:
+    Description: Duration of the instance
+    Type: String
+    Default: 30d
+
+  TagTeamParameter:
+    Description: The team to which the resource belongs
+    Type: String
+    Default: PSE
+
+Resources:
+
+  PECompilerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: The SG for the Puppet Compiler
+      GroupName: !Sub PECompiler${UniqueParameter}SG
+      VpcId:
+        Ref: VPCIdParameter
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0      
+        - IpProtocol: tcp
+          FromPort: 8140
+          ToPort: 8140
+          CidrIp: !Ref PuppetMasterCIDRParameter
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp: !Ref PuppetMasterCIDRParameter                                          
+      SecurityGroupEgress:
+        - IpProtocol: -1      
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Lifetime
+          Value:
+            Ref: TagLifetimeParameter
+        - Key: Email
+          Value:
+            Ref: TagEmailParameter
+        - Key: Team
+          Value:
+            Ref: TagTeamParameter
+
+  PECompiler:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId:
+        Ref: EC2ImageIdParameter
+      InstanceType:
+        Ref: EC2InstanceTypeParameter
+      KeyName:
+        Ref: EC2KeyNameParameter
+      Monitoring: false
+      SecurityGroupIds:
+        - !GetAtt PECompilerSG.GroupId
+      Tags:
+        - Key: lifetime
+          Value:
+            Ref: TagLifetimeParameter
+        - Key: Email
+          Value:
+            Ref: TagEmailParameter
+        - Key: Team
+          Value:
+            Ref: TagTeamParameter
