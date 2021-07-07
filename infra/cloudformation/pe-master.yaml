@@ -20,6 +20,11 @@ Parameters:
     Type: AWS::EC2::Image::Id
     Default: ami-090b347d44e58c47b
 
+  EC2KeyNameParameter:
+    Description: Key Pair used when creating the image
+    Type: String
+    Default: chris.allen-SSH
+
   TagEmailParameter:
     Description: Email address for tracking the resource
     Type: String
@@ -70,6 +75,8 @@ Resources:
         Ref: EC2ImageIdParameter
       InstanceType:
         Ref: EC2InstanceTypeParameter
+      KeyName:
+        Ref: EC2KeyNameParameter
       Monitoring: false
       SecurityGroupIds:
         - !GetAtt PEMasterSG.GroupId
