@@ -54,6 +54,18 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0          
+        - IpProtocol: tcp
+          FromPort: 8140
+          ToPort: 8140
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1      
           CidrIp: 0.0.0.0/0
@@ -84,7 +96,7 @@ Resources:
         #!/bin/bash -ex
         # put your script here
       Tags:
-        - Key: Lifetime
+        - Key: lifetime
           Value:
             Ref: TagLifetimeParameter
         - Key: Email
