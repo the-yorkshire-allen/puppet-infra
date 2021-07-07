@@ -66,6 +66,22 @@ Resources:
           FromPort: 8140
           ToPort: 8140
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 4433
+          ToPort: 4433
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8170
+          ToPort: 8170
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8143
+          ToPort: 8143
+          CidrIp: 0.0.0.0/0                                             
       SecurityGroupEgress:
         - IpProtocol: -1      
           CidrIp: 0.0.0.0/0
