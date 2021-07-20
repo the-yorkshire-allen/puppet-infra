@@ -99,11 +99,13 @@ Resources:
       Monitoring: false
       SecurityGroupIds:
         - !GetAtt PENodeSG.GroupId
-      UserData:
-        Fn::Base64: !Sub |
-          <script>
-          winrm quickconfig -quiet
-          </script>
+      UserData: !Base64 |
+        <powershell>
+        winrm quickconfig -quiet
+        winrm create winrm/config/Listener?Address=*+Transport=HTTP
+        winrm set winrm/config/service/auth @{CredSSP="true"}
+        netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" new enable=Yes remoteip=any        
+        </powershell>
       Tags:
         - Key: lifetime
           Value:
