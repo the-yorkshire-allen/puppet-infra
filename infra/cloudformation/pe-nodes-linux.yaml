@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Cloudformation template for building a resource pool for a PE-Master
+Description: Cloudformation template for building a nodes
 
 Parameters:
   VPCIdParameter:
@@ -8,22 +8,34 @@ Parameters:
     Default: vpc-b741c3d3
 
   EC2InstanceTypeParameter:
-    Description: Enter m5.large or m5.xlarge. Default is m5.large.
+    Description: Enter m4.large or m4.xlarge. Default is m4.large.
     Type: String
-    Default: m5.large
+    Default: m4.large
     AllowedValues:
-      - m5.large
-      - m5.xlarge
+      - m4.large
+      - m4.xlarge
 
   EC2ImageIdParameter:
-    Description: Image Id to be used to create the EC2.  Default is Centos8 in eu-west-1
+    Description: Image Id to be used to create the EC2.  Default is 47b Centos8 in eu-west-1. b31 Windows Server 2019 Base.
     Type: AWS::EC2::Image::Id
     Default: ami-090b347d44e58c47b
+    AllowedValues:
+      - ami-00044f922345e6b31
+      - ami-090b347d44e58c47b
+
+  PEHostParameter:
+    Description: Hostname of the PE server to install the agent
+    Type: String
+    Default: ec2-54-75-119-0.eu-west-1.compute.amazonaws.com
 
   EC2KeyNameParameter:
     Description: Key Pair used when creating the image
     Type: String
     Default: chris.allen-SSH
+
+  UniqueParameter:
+    Description: Unique reference for this CF Stack to identify resources
+    Type: String
 
   TagEmailParameter:
     Description: Email address for tracking the resource
@@ -33,7 +45,7 @@ Parameters:
   TagLifetimeParameter:
     Description: Duration of the instance
     Type: String
-    Default: 30d
+    Default: 90d
 
   TagTeamParameter:
     Description: The team to which the resource belongs
@@ -42,11 +54,11 @@ Parameters:
 
 Resources:
 
-  PEMasterSG:
+  PENodeSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: The SG for the Puppet Enterprise Server
-      GroupName: PEMasterSG    
+      GroupDescription: The SG for the Puppet Node
+      GroupName: !Sub PENode${UniqueParameter}SG
       VpcId:
         Ref: VPCIdParameter
       SecurityGroupIngress:
@@ -55,33 +67,17 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 0.0.0.0/0   
         - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0          
+          FromPort: 5985
+          ToPort: 5985
+          CidrIp: 0.0.0.0/0                                       
         - IpProtocol: tcp
-          FromPort: 8140
-          ToPort: 8140
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8081
-          ToPort: 8081
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 4433
-          ToPort: 4433
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8170
-          ToPort: 8170
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8143
-          ToPort: 8143
-          CidrIp: 0.0.0.0/0                                             
+          FromPort: 5986
+          ToPort: 5986
+          CidrIp: 0.0.0.0/0                
       SecurityGroupEgress:
         - IpProtocol: -1      
           CidrIp: 0.0.0.0/0
@@ -96,7 +92,7 @@ Resources:
           Value:
             Ref: TagTeamParameter
 
-  PEMaster:
+  PENode:
     Type: AWS::EC2::Instance
     Properties:
       ImageId:
@@ -107,10 +103,14 @@ Resources:
         Ref: EC2KeyNameParameter
       Monitoring: false
       SecurityGroupIds:
-        - !GetAtt PEMasterSG.GroupId
-      UserData: !Base64 |
-        #!/bin/bash -ex
-        # put your script here
+        - !GetAtt PENodeSG.GroupId
+      UserData: 
+        Fn::Base64: !Sub
+          - |
+            #!/bin/bash
+            curl --insecure "https://${pe_host}:8140/packages/current/install.bash" | sudo bash
+            echo "Complete"
+          - pe_host: !Ref PEHostParameter
       Tags:
         - Key: lifetime
           Value:

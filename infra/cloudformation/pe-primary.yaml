@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Cloudformation template for building a resource pool for a PE-Compiler
+Description: Cloudformation template for building a resource pool for a PE-Master
 
 Parameters:
   VPCIdParameter:
@@ -8,29 +8,22 @@ Parameters:
     Default: vpc-b741c3d3
 
   EC2InstanceTypeParameter:
-    Description: Enter m4.large or m4.xlarge. Default is m4.large.
+    Description: Enter m5.large or m5.xlarge. Default is m5.large.
     Type: String
-    Default: m4.large
+    Default: m5.large
     AllowedValues:
-      - m4.large
-      - m4.xlarge
+      - m5.large
+      - m5.xlarge
 
   EC2ImageIdParameter:
-    Description: Image Id to be used to create the EC2.  Default is 47b Centos8 in eu-west-1. b31 Windows Server 2019 Base.
+    Description: Image Id to be used to create the EC2.  Default is Centos8 in eu-west-1
     Type: AWS::EC2::Image::Id
     Default: ami-090b347d44e58c47b
-    AllowedValues:
-      - ami-00044f922345e6b31
-      - ami-090b347d44e58c47b
 
   EC2KeyNameParameter:
     Description: Key Pair used when creating the image
     Type: String
     Default: chris.allen-SSH
-
-  UniqueParameter:
-    Description: Unique reference for this CF Stack to identify resources
-    Type: String
 
   TagEmailParameter:
     Description: Email address for tracking the resource
@@ -40,20 +33,24 @@ Parameters:
   TagLifetimeParameter:
     Description: Duration of the instance
     Type: String
-    Default: 90d
+    Default: 30d
 
   TagTeamParameter:
     Description: The team to which the resource belongs
     Type: String
     Default: PSE
 
+  UniqueParameter:
+    Description: Unique reference for this CF Stack to identify resources
+    Type: String
+
 Resources:
 
-  PENodeSG:
+  PEMasterSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: The SG for the Puppet Node
-      GroupName: !Sub PENode${UniqueParameter}SG
+      GroupDescription: The SG for the Puppet Enterprise Server
+      GroupName: PEMaster${UniqueParameter}SG    
       VpcId:
         Ref: VPCIdParameter
       SecurityGroupIngress:
@@ -62,17 +59,37 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 3389
-          ToPort: 3389
-          CidrIp: 0.0.0.0/0   
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 5985
-          ToPort: 5985
-          CidrIp: 0.0.0.0/0                                       
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0          
         - IpProtocol: tcp
-          FromPort: 5986
-          ToPort: 5986
-          CidrIp: 0.0.0.0/0                
+          FromPort: 8140
+          ToPort: 8140
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 4433
+          ToPort: 4433
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8170
+          ToPort: 8170
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8143
+          ToPort: 8143
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1      
           CidrIp: 0.0.0.0/0
@@ -87,7 +104,7 @@ Resources:
           Value:
             Ref: TagTeamParameter
 
-  PENode:
+  PEMaster:
     Type: AWS::EC2::Instance
     Properties:
       ImageId:
@@ -98,14 +115,10 @@ Resources:
         Ref: EC2KeyNameParameter
       Monitoring: false
       SecurityGroupIds:
-        - !GetAtt PENodeSG.GroupId
+        - !GetAtt PEMasterSG.GroupId
       UserData: !Base64 |
-        <powershell>
-        winrm quickconfig -quiet
-        winrm create winrm/config/Listener?Address=*+Transport=HTTP
-        winrm set winrm/config/service/auth @{CredSSP="true"}
-        netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" new enable=Yes remoteip=any        
-        </powershell>
+        #!/bin/bash -ex
+        # put your script here
       Tags:
         - Key: lifetime
           Value:
